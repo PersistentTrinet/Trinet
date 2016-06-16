@@ -1,0 +1,381 @@
+<apex:page standardController="Opportunity" docType="html-5.0" id="thePage"
+	extensions="OpportunityRecommendationsCtrl" showHeader="false" sidebar="false"
+	applyHTMLTag="false" standardStyleSheets="false" action="{!ExceptionHandling}">
+	<!-- 
+		Author 			: 	Sriteja Prabhala
+		Created On 		: 	5th May, 2015
+		Last Modified 	: 	12th May, 2015
+		Purpose 		: 	To Display Search Results on Opportunity Detail Page. 
+	-->
+	<meta http-equiv="X-UA-Compatible" content="IE=8" />
+	<apex:stylesheet value="{!JSENCODE(URLFOR($Resource.KaybusResources, 'css/bootstrap.min.css'))}" />
+	<apex:stylesheet value="{!JSENCODE(URLFOR($Resource.KaybusResources, 'css/font-awesome.min.css'))}" />
+	<apex:stylesheet value="{!JSENCODE(URLFOR($Resource.KaybusResources, 'css/tooltipster.css'))}" />
+	<apex:stylesheet value="{!JSENCODE(URLFOR($Resource.KaybusResources, 'css/jquery-ui.css'))}" />
+	<apex:stylesheet value="{!JSENCODE(URLFOR($Resource.KaybusResources, 'css/main.css'))}" />
+	
+	<style>
+	.kb-knowledge-browser .media-list-grid .media .media-shim{border-top-right-radius: 3px;
+    border-top-left-radius: 3px;
+    overflow: hidden;
+    height: 120px;}
+    
+    .kb-knowledge-browser .media-list-grid .media .media-shim a{width:100% !important; height:120px !important;}
+    .kb-knowledge-browser .media-list-grid .media .media-body{overflow:hidden !important;}
+    .kb-knowledge-browser .media-list-grid .media{ height:210px !important;}
+    .kb-knowledge-browser .media-list-grid .media .expose-summary .media-body > .media-heading{ height:50px !important;}
+    .kb-knowledge-browser .media-list-grid .media .media-object-compact{    background-position: center center !important;}
+	
+	</style>
+	<apex:form id="theForm" styleClass="form-horizontal"> 
+		<apex:actionstatus id="loaderStatus">
+		    <apex:facet name="start">
+		        <div class="waitingSearchDiv" id="loadingDiv" style="background-color: #fbfbfb;opacity:0.65; z-index : 104;position: absolute; text-align: center;width: 100%;height: 100%;">
+		            <div class="waitingHolder" style="padding-top: 100px;">
+		            <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+		            <span class="waitingDescription">Loading...</span>
+		            </div>
+		        </div>
+		    </apex:facet>
+		</apex:actionstatus>
+		<apex:outputPanel id="mainPanel">
+			<apex:outputPanel rendered="{!IF(!hasAccess, true, false)}">
+				You are not authorized to access Kaybus. Please contact your Administrator. 
+			</apex:outputPanel>
+			<apex:outputPanel rendered="{!IF(hasAccess, true, false)}">
+			     <apex:outputPanel rendered="{!isErrorOccured}" id="errorPanel">
+					Something went wrong while fetching Recommendations
+				</apex:outputPanel>
+				<apex:outputpanel rendered="{! Not(isErrorOccured)}">
+				<apex:outputPanel rendered="{!IF((allsearches != null && allsearches.size > 0), false ,true)}">
+				<!-- <apex:outputPanel rendered="{!IF((allsearches != null && allsearches.size > 0  && {!isErrorOccured }), false, true)}"> -->
+					No recommendations found. 
+				</apex:outputPanel>
+				</apex:outputpanel>
+				<apex:outputPanel rendered="{!IF(allsearches != null && allsearches.size > 0 , true, false)}">
+					<div class="container kb-knowledge-browser kb-dashboard-in-progress kb-dashboard-iknow opportunities">
+						<ul class="media-list media-list-grid row">
+							<apex:variable var="searchCount" value="{!0}" />
+							<apex:repeat value="{!allsearches}" var="searchRes">
+								<li id="result{!searchCount}"
+									class="col-sm-4 col-md-3 col-lg-3">
+									<article class="media">
+										<div class="media-shim">
+											<a href="{!tenantURL}/#/courses/{!searchRes.id}" target="_blank"
+												class="media-object-compact letterbox"
+												style="background-image: url({!IF(searchRes.image != null, tenantURL+'/' + searchRes.image.thumbnails.grid+'&access_token='+access_token, '')});">
+											</a>
+											<div class="media-body overlay">
+												<!-- heading -->
+												<h3 class="media-heading" style="max-height: 44px; overflow: hidden; display: block;">
+													<a href="{!tenantURL}/#/courses/{!searchRes.id}" class="courseTitle"
+														title="{!searchRes.title}" target="_blank">
+														{!searchRes.title} </a>
+												</h3>
+												<div class="media-summary-compact">
+													<!-- tags -->
+													<ul class="media-tags">
+														<apex:repeat value="{!searchRes.tags}" var="category">
+															<li class="media-tag media-tag-default">
+																{!category}
+															</li>
+														</apex:repeat>
+													</ul>
+													<p class="media-description" style="max-height: 63px; overflow: hidden; display: block;"> {!searchRes.description}</p>
+												</div>
+												<aside class="media-metadata-compact">
+													<div class="media-metadata-publisher">
+														<span>{!searchRes.publisher_name}</span> 
+														<p>
+															<time pubdate="" datetime="{!searchRes.created_at}">
+																<apex:outputText value="{0,date,MMM dd',' yyyy }">
+																	<apex:param value="{!searchRes.created_at}" />
+																</apex:outputText>
+															</time>
+															<span class="pull-right">
+																<span class="star-rating" data-rating="{!If(searchRes.rating != null ,searchRes.rating ,0.0)}"></span>
+																<span class="ratingValue">({!If(searchRes.rating_count != null ,searchRes.rating_count ,0)})</span>
+															</span>
+														</p>
+													</div>
+													<div class="actions pull-right">
+														<button class="btn btn-xs btn-default btn-share tooltipster" data-courseId="{!searchRes.id}"
+															type="button"  data-placement="top" title="Share" style="display : {!IF(searchRes.allow_sharing, 'inline','none')};">
+															<i class="fa fa-share-alt icon-size-sm"></i>
+														</button>
+														<button class="btn btn-xs btn-default btn-favorite tooltipster" onclick="favouriteAF('{!searchRes.id}',{!searchRes.isFavorited});"
+															type="button"  data-placement="top" title="Favorite">
+															<i class="fa {!IF(searchRes.isFavorited,'fa-bookmark' ,'fa-bookmark-o')}" 
+																style="color : {!IF(searchRes.isFavorited, 'green' , '')}"></i>
+														</button>
+														<div class="download-dropdown btn-group dropup">
+															<button
+																class="btn dropdown-toggle btn-xs btn-default tooltipster" type="button"
+																data-toggle="dropdown" title="Download">
+																<i class="fa fa-download kb-icon-view icon-size-sm"></i>
+															</button>
+															<ul class="dropdown-menu dropdown-menu-right dropdown-download" role="menu">
+																<apex:repeat value="{!searchRes.downloads}" var="download">
+																	<li class="dropdown-menu-item">
+																		<a class="downloadItem" href="{!tenantURL}{!download.url}" target="_blank" role="menuitem"
+																		tabindex="-1"> Download {!download.format} </a>
+																	</li>
+																</apex:repeat>
+															</ul>
+														</div>
+													</div>
+												</aside>
+												<!-- .media-metadata -->
+											</div>
+											<div class="media-body overlay-share" style="">
+												<div class="padBottom10">
+													<input id="usr{!searchRes.id}" class="select-users form-control" data-chosenId="" data-courseId="{!searchRes.id}" 
+													placeholder="User or Group"/>
+												</div>
+												<div class="padBottom10">
+													<textarea id="cmnt{!searchRes.id}" class="form-control textAreaNoResize" placeholder="Comment"></textarea>
+												</div>
+												<button class="btn btn-default dropdown-toggle btn-sm btn-share-close" 
+													type="button" title="Cancel"> Cancel
+												</button>
+												<button class="btn btn-primary dropdown-toggle btn-sm pull-right btn-share-content" onClick = "shareContentJS('{!searchRes.id}');"
+													type="button" title="Share"> Share
+												</button>
+											</div>
+										</div>
+									</article> <!-- .media -->
+								</li>
+								<apex:variable var="searchCount" value="{!searchCount+1}" />
+							</apex:repeat>
+						</ul>
+						<div class="media-pages">
+				            <ul class="pagination pagination-left">
+				                <li>
+				                    <a href="javascript:void(0);" data-pageNum="{!IF(pageNum > 1, pageNum-1, pageNum)}" class="previous-page"><i class="fa fa-chevron-left"></i></a>
+				                </li>
+				            </ul>
+				            <ul class="pagination pagination-right">
+				                <li>
+				                    <a href="javascript:void(0);" data-pageNum="{!IF(pageNum < maxPageNum , pageNum+1, maxPageNum)}" class="next-page"><i class="fa fa-chevron-right"></i></a>
+				                </li>
+				            </ul>
+				        </div>
+					</div>
+				</apex:outputPanel>
+			</apex:outputPanel>
+		</apex:outputPanel>
+		<apex:actionFunction name="favouriteAF" action="{!favouriteItem}" oncomplete="handleFavoriteResult({!isSuccess});" rerender="mainPanel" status="loaderStatus">
+			<apex:param name="courseId" value="" assignTo="{!courseId}" /> 
+			<apex:param name="isFavorite" value="" assignTo="{!isFavorite}" />
+		</apex:actionFunction>
+		
+		<apex:actionFunction name="shareContentAF" action="{!shareContent}" oncomplete="handleShareResult({!isSuccess});" rerender="mainPanel" status="loaderStatus">
+			<apex:param name="courseId" value="" assignTo="{!courseId}" /> 
+			<apex:param name="userOrGrpId" value="" assignTo="{!userOrGrpId}" />
+			<apex:param name="userName" value=""  assignTo="{!userName}" /> 
+			<apex:param name="userType" value=""  assignTo="{!userType}" /> 
+			<apex:param name="userComment" value="" assignTo="{!userComment}" /> 
+		</apex:actionFunction>
+		
+		<apex:actionFunction name="performSearchAF" action="{!performSearch}" oncomplete="handlePagination({!pageNum});" rerender="mainPanel" status="loaderStatus">
+			<apex:param name="pageNum" value="" assignTo="{!pageNum}" /> 
+		</apex:actionFunction>
+	</apex:form>
+	<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script> -->
+	<!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script> -->
+	<script src="{!JSENCODE(URLFOR($Resource.KaybusResources,'js/jquery.min.js'))}"></script>
+	<script src="{!JSENCODE(URLFOR($Resource.KaybusResources,'js/jquery-ui.min.js'))}"></script>
+	<script src="{!JSENCODE(URLFOR($Resource.KaybusResources,'js/bootstrap.min.js'))}"> </script>
+	<script src="{!JSENCODE(URLFOR($Resource.KaybusResources,'js/jquery.tooltipster.min.js'))}"> </script>
+	<script>
+		var rating = 0.0;
+		var cnt = 5;
+		var objList = [];
+		var courseId = '';
+		var userName = '';
+		var userOrGrpId = '';
+		var userType = '';
+		var comment = '';
+		var curPageNum = 1;
+		
+		$(function(){
+			initializeView();
+		});
+		
+		$.fn.reverseChildren = function() {
+		  return this.each(function(){
+		    var $this = $(this);
+		    $this.children().each(function(){ $this.prepend(this) });
+		  });
+		};
+		
+		function calculateRating(){
+			rating = 0.0;
+			cnt = 5;
+			$('.star-rating').each(function(){
+				$elem = $(this);
+				rating = parseFloat($elem.attr("data-rating"));
+				cnt = 5;
+				while(rating >= 1){
+					cnt--;
+					rating--;
+					$elem.append('<span rel="'+(5-cnt)+'" class="fa fa-star"></span>');
+				}if(rating > 0 && rating < 1){
+					cnt--;
+					$elem.append('<span rel="'+(5-cnt)+'" class="fa fa-star-half-o"></span>');
+				}
+				while(cnt > 0){
+					cnt--;
+					$elem.append('<span rel="'+(5-cnt)+'"class="fa fa-star-o"></span>');
+				}
+				$elem.reverseChildren();
+			});
+		}
+		
+		function initializeView(){
+			//Initialize Components
+			$('.dropdown-menu').dropdown();
+			$('.tooltipster').tooltipster();
+			
+			//Hanlde Disabled Status
+			if(curPageNum == 1){
+				$('.previous-page').parent().addClass("disabled");
+			}else{
+				$('.previous-page').parent().removeClass("disabled");
+			}
+			
+			if(curPageNum == {!maxPageNum}){
+				$('.next-page').parent().addClass("disabled");
+			}else{
+				$('.next-page').parent().removeClass("disabled");
+			}
+			/* Truncate Title using jQuery & JS */
+			$('.courseTitle').each(function(){
+				var title = $(this).html();
+				title = truncateStr(title);
+				$(this).html(title);
+			});
+			
+			registerHandlers();
+			calculateRating();
+		}
+		
+		function registerHandlers(){
+			$('.overlay').mouseenter(function(){
+				$(this).parent().addClass('expose-summary');
+			});
+			$('.overlay').mouseleave(function(){
+				$(this).parent().removeClass('expose-summary');
+				$('.download-dropdown').removeClass('open');
+				$('.download-dropdown').attr('aria-expanded','false');
+			});
+			$('.downloadItem').on('click', function(e){
+				e.preventDefault();
+				window.open($(this).attr('href'),'_blank');
+			});
+			
+			$('.btn-share').on('click', function(e){
+				courseId = $(this).attr('data-courseId');
+				$(this).closest('div.media-shim').addClass('expose-share');
+				prepareSelect();		
+			});
+			$('.btn-share-close').on('click', function(e){
+				$(this).closest('div.media-shim').removeClass('expose-share');		
+			});
+			$('.next-page').on('click', function(e){
+				e.preventDefault();
+				var pageNum = Number($(this).attr('data-pageNum'));
+				if(curPageNum != pageNum){
+					performSearchAF(pageNum);
+				}
+			});
+			$('.previous-page').on('click', function(e){
+				e.preventDefault();
+				var pageNum = Number($(this).attr('data-pageNum'));
+				if(curPageNum != pageNum){
+					performSearchAF(pageNum);
+				}
+			});
+		}
+		function prepareSelect(){
+			$(".select-users").autocomplete({ 
+                source: function(request, response){
+                    {!nameSpace}.OpportunityRecommendationsCtrl.queryUsers(request.term, 
+		                function(result, event){
+		                    if (event.status) {                        
+		                        objList = [];
+		                         for(var i = 0; i < result.length; i++){   
+							        var obj = new Object();   
+							        obj.value = result[i].id;   
+							        obj.label = result[i].name;
+							        obj.type = result[i].type; 
+							        objList.push(obj);   
+							     }
+		                        response(objList);
+		                    }
+		                }, 
+		                {escape: true}
+		            );
+                },
+                select: function(event, ui){
+                    $('#usr'+courseId).val(ui.item.label);
+                    $('#usr'+courseId).attr('data-chosenId',ui.item.value);
+                    
+                    userName = ui.item.label;
+                    userOrGrpId = ui.item.value;
+                    userType = ui.item.type;
+                    return false;
+                }                          
+            });     
+		}
+		function shareContentJS(courseId){
+		   comment = $('#cmnt'+courseId).val();
+           shareContentAF(courseId, userOrGrpId, userName, userType,comment);
+           userOrGrpId = '';
+           userName = '';
+           userType = '';
+           comment = '';
+           $('#cmnt'+courseId).val('');
+        }
+        function handleShareResult(isSuccess){
+        	if(isSuccess){
+        		alert('Content Shared Successfully!');
+        	}else{
+        	      
+        		   alert('Something went wrong. Please try again later..');
+        	}
+        	//initializeView();
+        	performSearchAF(curPageNum);
+        }
+        function handleFavoriteResult(isSuccess){
+        	if(isSuccess){
+        		alert('Updated Successfully!');
+        	}else{
+        		alert('Something went wrong. Please try again later.');
+        	}
+        	performSearchAF(curPageNum);
+        	//initializeView();
+        }
+        function handlePagination(pageNum){
+        	curPageNum = pageNum;
+        	initializeView();
+        }
+        //function to truncate String - Used for title
+        function truncateStr(string){
+		   if (string.length > 90)
+		      return string.substring(0,90)+'...';
+		   else
+		      return string;
+		}
+		function errorDisplayWidget(){
+		   alert('{!profileName.name}'); 
+		   if ('{!profileName.name}' == 'System Administrator'){
+		      //alert('{!typeOfException}');
+		        document.getElementById('{!$Component.thePage:theForm:errorPanel}').innerHTML = '{!typeOfException}';
+		        var div = document.getElementById('{!$Component.thePage:theForm:errorPanel}');
+                div.innerHTML = div.innerHTML + '{!responseMessage}';
+		   }
+		}
+		errorDisplayWidget();
+	</script>
+</apex:page>

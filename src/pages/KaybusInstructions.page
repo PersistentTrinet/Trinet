@@ -1,0 +1,143 @@
+<apex:page showHeader="true" sidebar="false" title="Kaybus">
+	<!-- 
+		Author 			: 	Sriteja Prabhala
+		Created On 		: 	7th May, 2015
+		Last Modified 	: 	19th May, 2015
+		Purpose 		: 	To Show Instructions post installation 
+	-->
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+	</head>
+	<style>
+		#instructionsDiv ol{
+			line-height: 18px;
+		}
+		#instructionsDiv ol li{
+			padding-bottom : 2px;
+		}
+		#instructionsDiv table,#instructionsDiv  th, #instructionsDiv  td {
+		   border: 1px solid black;
+		}
+	</style>
+	<body>
+		<div class="container" id="instructionsDiv">
+			<div class="row">
+				<div class="col-md-12">
+					<h4>Kaybus Opportunity Widget Configuration Instructions:</h4>
+					<ol>
+						<li>Configuration Parameters:
+							<ul>
+								<li>Goto <b>Settings</b> -> <b>Develop</b> -> <b>Custom
+										Settings</b> -> <b>Kaybus Config </b> -> <b> Manage</b></li>
+								<li>Create or Update the following records:
+									<ul>
+										<li><b>Tenant</b> : Your Kaybus Tenant URL (For example.
+											"https://know.kaybus.com")</li>
+									</ul>
+									<p>Ensure you copy the attribute names from here to avoid
+										typos.</p>
+								</li>
+							</ul>
+						</li>
+						<li>Remote Site Settings:
+							<ul>
+								<li>Goto <b>Settings</b> -> <b>Security Controls</b> -> <b>Remote
+										Site Settings</b> -> <b>Kaybus </b> -> <b> Edit</b></li>
+								<li>In the <b>Remote Site URL</b>, mention the same <b>Tenant</b>
+									URL which you have entered previously in Custom Setting
+								</li>
+							</ul>
+						</li>
+						<li>Page Layout Settings:
+							<ul>
+								<li>In your Opportunity Page Layout. Create a Seperate
+									Section, called <b>Kaybus Recommends</b> at the level you need.
+									Select it to be shown only in <b>Detail Page</b> with <b>1-Column.</b>
+								</li>
+								<li>Add the Visualforce page <b>OpportunityRecommendations</b>
+									to this section and set the height to <b>260</b> in its
+									settings.
+								</li>
+							</ul>
+						</li>
+						<li>Connected App Settings:
+							<ul>
+								<li>Enable Identity Provider for your org by going to <b>Settings</b>
+									-> <b>Security Controls</b> -> <b>Identity Provider</b> -> <b>Enable
+										Identity Provider </b>
+								</li>
+								<li>Create a new Connected App called <b>Kaybus Opportunities</b> with the following
+									parameters via <b>Build</b> -> <b>Create</b> -> <b>Apps</b>:
+									<table>
+										<tr>
+											<th>Attribute</th>
+											<th>Value</th>
+										</tr>
+										<tr>
+											<td>Connected App Name</td>
+											<td>Kaybus Opportunities</td>
+										</tr>
+										<tr>
+											<td>API Name</td>
+											<td>Kaybus_Opportunities</td>
+										</tr>
+										<tr>
+											<td>Enabled OAuth Settings</td>
+											<td>Checked</td>
+										</tr>
+										<tr>
+											<td>Callback URL</td>
+											<td>&lt;Your Kaybus Tenant URL&gt;/policy/auth/saml/callback</td>
+										</tr>
+										<tr>
+											<td>Selected OAuth Scopes</td>
+											<td>Access and manage your data (api)</td>
+										</tr>
+										<tr>
+											<td>Enable SAML</td>
+											<td>Checked</td>
+										</tr>
+										<tr>
+											<td>Entity Id</td>
+											<td>&lt;Issuer as shown in Identity Provider setup&gt;</td>
+										</tr>
+										<tr>
+											<td>ACS URL</td>
+											<td>&lt;Same as Callback URL&gt;</td>
+										</tr>
+										<tr>
+											<td>Subject Type</td>
+											<td>Username</td>
+										</tr>
+										<tr>
+											<td>Name ID Format</td>
+											<td>emailAddress</td>
+										</tr>
+										<tr>
+											<td>Issuer</td>
+											<td>&lt;Issuer as shown in Identity Provider setup&gt;</td>
+										</tr>
+									</table>
+								</li>
+								<li>Set Permitted Users for this Connected App to "Admin approved users are pre-authorized" in <b>Manage Apps</b> -> <b>Connected Apps</b> -> <b>Kaybus Opportunities</b> -> <b>Edit</b>:
+								</li>
+							</ul>
+						</li>
+						<li>Permission Set Configuration:
+							<ul>
+								<li>Goto <b>Manage Users</b> -> <b>Permission Sets</b> -> <b>New</b></li>
+								<li>Create a new Permission Set called "Kaybus Permission Set"</li>
+								<li>Assign users who need access to this widget to this Permission Set</li>
+								<li>Assign this Permission Set to the Connected App created earlier in <b>Manage Apps</b> -> <b>Connected Apps</b> -> <b>Kaybus Opportunities</b> -> <b>Manage Permission Sets</b>:
+								</li>
+							</ul>
+						</li>
+						<li>After creating the Connected App, send across its Client ID and Client Secret values found in <b>Build</b> -> <b>Create</b> -> <b>Apps</b> -> <b>Connected Apps</b> -> <b>Kaybus Opportunities</b> to Kaybus Admin. 
+						</li>
+					</ol>
+				</div>
+			</div>
+		</div>
+	</body>
+</apex:page>
