@@ -83,7 +83,7 @@
         <fullName>User_Name__c</fullName>
         <externalId>false</externalId>
         <label>User Name</label>
-        <length>250</length>
+        <length>300</length>
         <required>false</required>
         <trackTrending>false</trackTrending>
         <type>Text</type>
